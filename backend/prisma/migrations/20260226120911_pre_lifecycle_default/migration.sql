@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "products" ALTER COLUMN "stage" SET DEFAULT 'PRE_LIFECYCLE';

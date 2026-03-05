@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "ProductStage" ADD VALUE IF NOT EXISTS 'PRE_LIFECYCLE';

@@ -1,0 +1,47 @@
+{
+  "name": "portal-backend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "prisma": "prisma",
+    "seed": "tsx src/seed.ts",
+    "banned:sync": "tsx src/cli/syncBannedRestrictedCli.ts",
+    "banned:sync:online": "tsx src/cli/syncBannedRestrictedCli.ts",
+    "banned:import-fixtures": "tsx src/cli/importBannedRestrictedFixtures.ts",
+    "banned:ingest": "tsx src/cli/ingestEvidencePackCli.ts",
+    "banned:ingest:offline": "tsx src/cli/ingestBannedRestrictedOfflineCli.ts",
+    "approvers:backfill": "tsx src/cli/backfillApprovers.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@prisma/client": "^6.19.2",
+    "bcrypt": "^6.0.0",
+    "cheerio": "^1.2.0",
+    "csv-parse": "^6.1.0",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "pdf-parse": "1.1.1",
+    "pino": "^9.6.0",
+    "pino-http": "^10.4.0",
+    "playwright": "^1.58.2",
+    "uuid": "^11.1.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/express": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^22.15.0",
+    "@types/uuid": "^10.0.0",
+    "prisma": "^6.19.2",
+    "tsx": "^4.19.4",
+    "typescript": "~5.7.3"
+  }
+}

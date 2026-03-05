@@ -1,0 +1,14 @@
+Banned or restricted chemicals | AICIS
+Source: https://www.industrialchemicals.gov.au/chemical-information/banned-or-restricted-chemicals
+
+This is the hub page for banned or restricted chemicals information from the
+Australian Industrial Chemicals Introduction Scheme (AICIS).
+
+Links to evidence pages:
+- Chemicals listed under Rotterdam and Stockholm Conventions
+  - Apply for annual import authorisation (Rotterdam Convention)
+  - Apply for annual export authorisation (Rotterdam Convention)
+- Importing or exporting mercury (Minamata Convention)
+- Poisons Standard
+
+This page does not contain CAS numbers directly. It serves as the index/hub page.

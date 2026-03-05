@@ -1,0 +1,1254 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum FormulationStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum DocumentType {
+  MSDS
+  COA
+  TDS
+  SPEC_SHEET
+  INGREDIENT_DATASHEET
+  OTHER
+}
+
+enum ValidationStatus {
+  PASS
+  FAIL
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ExtractionJobStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+}
+
+enum ProductStage {
+  PRE_LIFECYCLE
+  IDEA
+  R_AND_D
+  COMPLIANCE_READY
+  PACKAGING_READY
+  MANUFACTURING
+  READY_TO_SELL
+  LIVE
+  DISCONTINUED
+  MANUFACTURING_APPROVED
+  BATCH_CREATED
+  BATCH_RELEASED
+  READY_FOR_SALE
+}
+
+enum RegionCode {
+  IN
+  AU
+}
+
+enum RawMaterialLotStatus {
+  AVAILABLE
+  BLOCKED
+  EXPIRED
+}
+
+enum BatchStatus {
+  CREATED
+  RELEASED
+}
+
+enum AlertType {
+  LOW_STOCK
+  LOT_EXPIRING_SOON
+  LOT_EXPIRED
+  DOC_EXPIRING_SOON
+  DOC_EXPIRED
+}
+
+enum AlertStatus {
+  ACTIVE
+  RESOLVED
+}
+
+enum FinishedGoodLotStatus {
+  AVAILABLE
+  EXHAUSTED
+}
+
+enum GreenfieldStatus {
+  DRAFT
+  READY_TO_CONVERT
+  CONVERTED
+  ARCHIVED
+}
+
+enum ComplianceRequestStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum CheckStatus {
+  PASS
+  NEEDS_REVIEW
+  FAIL
+}
+
+enum EligibilityStatus {
+  NOT_ELIGIBLE
+  ELIGIBLE
+  ELIGIBLE_WITH_WARNINGS
+  READY_FOR_APPROVAL
+  APPROVED
+}
+
+enum ApprovalDecision {
+  APPROVED
+  REJECTED
+}
+
+enum GeneratedArtifactType {
+  MARKETING_PLAN
+  LAYOUT_BRIEF
+  COLOR_SEQUENCE
+  PACKAGING_BRIEF
+}
+
+enum IngredientType {
+  STANDARD
+  BOTANICAL
+  BLEND
+  POLYMER
+  TRADE_NAME
+}
+
+enum FormulationUploadStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum ProductDocumentType {
+  COA
+  SDS
+  STABILITY_REPORT
+  MICROBIAL_REPORT
+  LAB_REPORT
+  PACKAGING_ARTWORK
+  OTHER
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  fullName        String
+  role            Role
+  passwordHash    String
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastLoginAt     DateTime?
+
+  createdByUserId String?
+  createdBy       User?     @relation("CreatedUsers", fields: [createdByUserId], references: [id])
+  createdUsers    User[]    @relation("CreatedUsers")
+
+  refreshTokens   RefreshToken[]
+  auditLogs       AuditLog[]
+
+  // E2 Core reverse relations
+  createdFormulations        Formulation[]        @relation("FormulationCreator")
+  createdFormulationVersions FormulationVersion[]  @relation("VersionCreator")
+  submittedVersions          FormulationVersion[]  @relation("VersionSubmitter")
+  approvedVersions           FormulationVersion[]  @relation("VersionApprover")
+  rejectedVersions           FormulationVersion[]  @relation("VersionRejecter")
+
+  // Storage-only uploads
+  formulationUploads         FormulationUpload[]  @relation("UploadCreator")
+  archivedUploads            FormulationUpload[]  @relation("UploadArchiver")
+
+  // Ingredient Master
+  ingredientCreated          IngredientMaster[]   @relation("IngredientCreatedBy")
+  ingredientUpdated          IngredientMaster[]   @relation("IngredientUpdatedBy")
+
+  // Products
+  productsCreated            Product[]            @relation("ProductCreator")
+  productStageEventsCreated  ProductStageEvent[]  @relation("StageEventCreator")
+
+  // Labels
+  labelsCreated              LabelMetadata[]      @relation("LabelCreator")
+
+  // Product Documents
+  productDocumentsCreated    ProductDocument[]     @relation("ProductDocCreator")
+
+  // Inventory / Batches
+  rawMaterialLotsCreated     RawMaterialLot[]      @relation("LotCreator")
+  batchesCreated             Batch[]               @relation("BatchCreator")
+
+  // Alerts
+  alertsResolved             SystemAlert[]         @relation("AlertResolver")
+
+  // Finished Goods
+  finishedGoodLotsCreated    FinishedGoodLot[]
+
+  // Ideation
+  ideationCreated            ProductIdeation[]
+
+  // Greenfield Ideas
+  greenfieldIdeasCreated     GreenfieldIdea[] @relation("GreenfieldCreator")
+
+  // Product Ranges (Folders)
+  rangesCreated              ProductRange[] @relation("RangeCreator")
+
+  // AICIS
+  aicisSnapshotsImported     AicisInventorySnapshot[]       @relation("AicisSnapshotImporter")
+  aicisScrutiniesCreated     UploadAicisScrutinySnapshot[]   @relation("AicisScrutinyCreator")
+
+  // Banned / Restricted
+  bannedRestrictedSnapshots  BannedRestrictedSnapshot[]      @relation("BannedRestrictedSnapshotCreator")
+
+  // Evidence Sources (Restricted Chemical Index)
+  evidenceSourcesCreated     EvidenceSource[]                @relation("EvidenceSourceCreator")
+
+  // Compliance Requests / Approvals / Artifacts
+  complianceRequestsCreated  ComplianceRequest[]             @relation("ComplianceRequestCreator")
+  complianceRequestsChecked  ComplianceRequest[]             @relation("ComplianceRequestChecker")
+  complianceRequestsApproved ComplianceRequest[]             @relation("ComplianceRequestApprover")
+  complianceApprovals        ComplianceApproval[]            @relation("ComplianceApprovalApprover")
+  generatedArtifactsCreated  GeneratedArtifact[]             @relation("ArtifactCreator")
+
+  @@map("users")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  at           DateTime @default(now())
+  actorUserId  String?
+  actor        User?    @relation(fields: [actorUserId], references: [id])
+  action       String
+  entityType   String
+  entityId     String?
+  ip           String?
+  userAgent    String?
+  requestId    String
+  metadata     Json     @default("{}")
+
+  @@index([at])
+  @@index([action])
+  @@index([actorUserId])
+  @@map("audit_logs")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// ─── E2 Core Models ─────────────────────────────────────────
+
+model ProductSku {
+  id           String        @id @default(cuid())
+  skuCode      String        @unique
+  productName  String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  formulations Formulation[]
+
+  @@map("product_skus")
+}
+
+model Formulation {
+  id               String              @id @default(cuid())
+  skuId            String
+  sku              ProductSku          @relation(fields: [skuId], references: [id])
+  currentVersionId String?             @unique
+  currentVersion   FormulationVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  createdById      String
+  createdBy        User                @relation("FormulationCreator", fields: [createdById], references: [id])
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  versions         FormulationVersion[] @relation("FormulationVersions")
+
+  // Storage-only uploads
+  uploads          FormulationUpload[]
+
+  // Product back-reference
+  activeForProducts Product[] @relation("ActiveFormulation")
+
+  @@index([skuId])
+  @@map("formulations")
+}
+
+model FormulationVersion {
+  id              String            @id @default(cuid())
+  formulationId   String
+  formulation     Formulation       @relation("FormulationVersions", fields: [formulationId], references: [id])
+  versionNumber   Int
+  status          FormulationStatus @default(DRAFT)
+  createdById     String
+  createdBy       User              @relation("VersionCreator", fields: [createdById], references: [id])
+  submittedById   String?
+  submittedBy     User?             @relation("VersionSubmitter", fields: [submittedById], references: [id])
+  approvedById    String?
+  approvedBy      User?             @relation("VersionApprover", fields: [approvedById], references: [id])
+  rejectedById    String?
+  rejectedBy      User?             @relation("VersionRejecter", fields: [rejectedById], references: [id])
+  rejectionReason String?
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Stage 3A — validation gates
+  totalPct                Decimal?          @db.Decimal(6, 3)
+  hasDuplicateIngredients Boolean?
+  missingDocTypes         String[]
+  validationStatus        ValidationStatus?
+  riskLevel               RiskLevel?
+  validatedAt             DateTime?
+
+  currentOf       Formulation?      @relation("CurrentVersion")
+  ingredients     FormulationIngredient[]
+  documents       Document[]
+
+  // Stage 4 — upload + extraction
+  uploadedFiles    UploadedFile[]
+  extractionJobs   ExtractionJob[]
+
+  // Batches
+  batches          Batch[]          @relation("BatchFormulationVersion")
+
+  @@unique([formulationId, versionNumber])
+  @@index([formulationId])
+  @@map("formulation_versions")
+}
+
+model FormulationIngredient {
+  id               String             @id @default(cuid())
+  versionId        String
+  version          FormulationVersion @relation(fields: [versionId], references: [id])
+  ingredientName   String
+  function         String
+  concentrationPct Decimal            @db.Decimal(6, 3)
+  createdAt        DateTime           @default(now())
+
+  @@index([versionId])
+  @@map("formulation_ingredients")
+}
+
+model Document {
+  id        String             @id @default(cuid())
+  versionId String
+  version   FormulationVersion @relation(fields: [versionId], references: [id])
+  type      DocumentType
+  fileName  String
+  url       String
+  createdAt DateTime           @default(now())
+
+  @@index([versionId])
+  @@map("documents")
+}
+
+// ─── Stage 4 — Upload + Extraction Models ───────────────────
+
+model UploadedFile {
+  id           String             @id @default(cuid())
+  versionId    String
+  version      FormulationVersion @relation(fields: [versionId], references: [id])
+  originalName String
+  mimeType     String
+  storagePath  String
+  sizeBytes    Int
+  createdAt    DateTime           @default(now())
+
+  extractionJobs ExtractionJob[]
+
+  @@index([versionId])
+  @@map("uploaded_files")
+}
+
+model ExtractionJob {
+  id          String              @id @default(cuid())
+  versionId   String
+  version     FormulationVersion  @relation(fields: [versionId], references: [id])
+  fileId      String
+  file        UploadedFile        @relation(fields: [fileId], references: [id])
+  status      ExtractionJobStatus @default(PENDING)
+  modeHint    String?
+  failReason  String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime            @default(now())
+
+  extractedIngredients ExtractedIngredient[]
+
+  @@index([versionId])
+  @@map("extraction_jobs")
+}
+
+model ExtractedIngredient {
+  id               String         @id @default(cuid())
+  jobId            String
+  job              ExtractionJob  @relation(fields: [jobId], references: [id])
+  rawName          String
+  suggestedInciName String?
+  concentrationPct Decimal?       @db.Decimal(6, 3)
+  confidence       Decimal        @db.Decimal(3, 2)
+  issues           Json           @default("[]")
+  createdAt        DateTime       @default(now())
+
+  @@index([jobId])
+  @@map("extracted_ingredients")
+}
+
+// ─── Storage-Only Upload Models ─────────────────────────────
+
+model FormulationUpload {
+  id              String   @id @default(cuid())
+  formulationId   String
+  formulation     Formulation @relation(fields: [formulationId], references: [id])
+  productId       String?
+  product         Product?    @relation("ProductUploads", fields: [productId], references: [id])
+  fileName        String
+  mimeType        String
+  sizeBytes       Int
+  storageKey      String
+  createdByUserId String
+  createdBy       User     @relation("UploadCreator", fields: [createdByUserId], references: [id])
+  createdAt       DateTime @default(now())
+  rawExtractJson  Json?
+
+  // Replace-formulation fields
+  status            FormulationUploadStatus @default(ACTIVE)
+  version           Int                     @default(1)
+  archivedAt        DateTime?
+  archivedByUserId  String?
+  archivedBy        User?    @relation("UploadArchiver", fields: [archivedByUserId], references: [id])
+
+  rows                FormulationUploadRow[]
+  complianceSnapshots UploadComplianceSnapshot[]
+  aicisScrutinies     UploadAicisScrutinySnapshot[]
+  latestForProduct    Product? @relation("LatestUpload")
+  complianceRequests  ComplianceRequest[] @relation("UploadComplianceRequests")
+
+  @@index([formulationId])
+  @@index([productId])
+  @@index([productId, status])
+  @@map("formulation_uploads")
+}
+
+model FormulationUploadRow {
+  id                  String            @id @default(cuid())
+  uploadId            String
+  upload              FormulationUpload @relation(fields: [uploadId], references: [id])
+  rawName             String
+  detectedPct         Float?
+  inciSuggestion      String?
+  casNumber           String?
+  confidence          Float
+  issues              Json     @default("[]")
+  matchedIngredientId String?
+  matchedIngredient   IngredientMaster? @relation("MatchedRows", fields: [matchedIngredientId], references: [id])
+  matchType           String?
+  matchConfidence     Float?
+  ingredientType      IngredientType?
+  resolvedAt          DateTime?
+  resolvedByUserId    String?
+  createdAt           DateTime @default(now())
+
+  aicisFindings       UploadAicisScrutinyRowFinding[]
+  evidenceDocs        IngredientEvidenceDoc[]
+
+  @@index([uploadId])
+  @@index([matchedIngredientId])
+  @@map("formulation_upload_rows")
+}
+
+// ─── Ingredient Master Models ────────────────────────────
+
+model IngredientMaster {
+  id              String   @id @default(cuid())
+  inciName        String   @unique
+  casNumber       String?
+  lowStockThresholdKg Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  createdByUserId String
+  updatedByUserId String?
+
+  createdBy       User     @relation("IngredientCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy       User?    @relation("IngredientUpdatedBy", fields: [updatedByUserId], references: [id])
+
+  synonyms        IngredientSynonym[]
+  matchedRows     FormulationUploadRow[] @relation("MatchedRows")
+  ruleItems       RuleItem[]
+  rawMaterialLots RawMaterialLot[]
+  alerts          SystemAlert[]
+
+  @@map("ingredient_masters")
+}
+
+model IngredientSynonym {
+  id           String @id @default(cuid())
+  ingredientId String
+  name         String
+
+  ingredient   IngredientMaster @relation(fields: [ingredientId], references: [id])
+
+  @@unique([ingredientId, name])
+  @@index([ingredientId])
+  @@map("ingredient_synonyms")
+}
+
+// ─── Trade Name Aliases ─────────────────────────────────
+
+model TradeNameAlias {
+  id            String   @id @default(cuid())
+  tradeName     String   @unique
+  canonicalInci String
+  casNumber     String?
+  createdAt     DateTime @default(now())
+
+  @@map("trade_name_aliases")
+}
+
+// ─── Ingredient Evidence Documents ──────────────────────
+
+model IngredientEvidenceDoc {
+  id              String   @id @default(cuid())
+  uploadRowId     String
+  fileName        String
+  storagePath     String
+  mimeType        String
+  sizeBytes       Int
+  docType         String   // SDS, COA, TDS, SPEC_SHEET, SUPPLIER_DECLARATION, OTHER
+  createdAt       DateTime @default(now())
+  createdByUserId String
+
+  uploadRow       FormulationUploadRow @relation(fields: [uploadRowId], references: [id])
+
+  @@index([uploadRowId])
+  @@map("ingredient_evidence_docs")
+}
+
+// ─── Product Range (Folder) ─────────────────────────────
+
+model ProductRange {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdById String?
+  createdBy   User?    @relation("RangeCreator", fields: [createdById], references: [id])
+
+  products    Product[]
+
+  @@map("product_ranges")
+}
+
+// ─── Product Models ─────────────────────────────────────
+
+model Product {
+  id                  String       @id @default(cuid())
+  name                String
+  productLine         String?
+  brand               String?
+  skuCode             String       @unique
+  stage               ProductStage @default(PRE_LIFECYCLE)
+  targetRegions       String[]
+  packNetContentMl    Int?
+  fillDensityGPerMl   Float        @default(1.0)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  createdByUserId     String
+  createdBy           User         @relation("ProductCreator", fields: [createdByUserId], references: [id])
+
+  activeFormulationId String?
+  activeFormulation   Formulation? @relation("ActiveFormulation", fields: [activeFormulationId], references: [id])
+
+  latestUploadId      String?              @unique
+  latestUpload        FormulationUpload?   @relation("LatestUpload", fields: [latestUploadId], references: [id])
+
+  rangeId             String
+  range               ProductRange @relation(fields: [rangeId], references: [id])
+
+  uploads             FormulationUpload[] @relation("ProductUploads")
+  stageEvents         ProductStageEvent[]
+  labels              LabelMetadata[]
+  documents           ProductDocument[]
+  batches             Batch[]
+  alerts              SystemAlert[]
+  finishedGoodLots    FinishedGoodLot[]
+  ideationVersions    ProductIdeation[]
+  greenfieldSource    GreenfieldIdea[]  @relation("ConvertedProduct")
+  complianceRequests  ComplianceRequest[] @relation("ProductComplianceRequests")
+  generatedArtifacts  GeneratedArtifact[] @relation("ProductGeneratedArtifacts")
+
+  @@index([rangeId])
+  @@map("products")
+}
+
+model ProductStageEvent {
+  id              String       @id @default(cuid())
+  productId       String
+  fromStage       ProductStage
+  toStage         ProductStage
+  reason          String?
+  createdAt       DateTime     @default(now())
+  createdByUserId String
+
+  product         Product      @relation(fields: [productId], references: [id])
+  createdBy       User         @relation("StageEventCreator", fields: [createdByUserId], references: [id])
+
+  @@index([productId, createdAt])
+  @@map("product_stage_events")
+}
+
+// ─── Label Metadata Models ──────────────────────────────
+
+model LabelMetadata {
+  id                   String     @id @default(cuid())
+  productId            String
+  region               RegionCode
+  versionNumber        Int
+  isActive             Boolean    @default(false)
+
+  productName          String
+  netQuantity          String
+  inciDeclaration      String
+  warnings             String?
+
+  // India-specific
+  manufacturerName     String?
+  manufacturerAddress  String?
+  batchFormat          String?
+  mfgDate              DateTime?
+  expDate              DateTime?
+
+  createdAt            DateTime   @default(now())
+  createdByUserId      String
+
+  product              Product    @relation(fields: [productId], references: [id])
+  createdBy            User       @relation("LabelCreator", fields: [createdByUserId], references: [id])
+
+  batches              Batch[]    @relation("BatchLabelVersion")
+
+  @@unique([productId, region, versionNumber])
+  @@index([productId, region, isActive])
+  @@map("label_metadata")
+}
+
+// ─── Compliance Engine Models ───────────────────────────
+
+model RuleSet {
+  id          String   @id @default(cuid())
+  region      String
+  version     String
+  effectiveAt DateTime
+  createdAt   DateTime @default(now())
+
+  items       RuleItem[]
+
+  @@map("rule_sets")
+}
+
+model RuleItem {
+  id           String   @id @default(cuid())
+  ruleSetId    String
+  ingredientId String
+  status       String   // ALLOWED | RESTRICTED | BANNED
+  maxPercent   Float?
+  notes        String?
+
+  ruleSet      RuleSet          @relation(fields: [ruleSetId], references: [id])
+  ingredient   IngredientMaster @relation(fields: [ingredientId], references: [id])
+
+  @@index([ruleSetId])
+  @@map("rule_items")
+}
+
+model UploadComplianceSnapshot {
+  id         String   @id @default(cuid())
+  uploadId   String
+  region     String
+  status     String   // PASS | WARN | FAIL
+  issuesJson Json
+  createdAt  DateTime @default(now())
+
+  upload     FormulationUpload @relation(fields: [uploadId], references: [id])
+
+  @@index([uploadId])
+  @@map("upload_compliance_snapshots")
+}
+
+// ─── Product Document Vault ─────────────────────────────
+
+model ProductDocument {
+  id               String              @id @default(cuid())
+  productId        String
+  type             ProductDocumentType
+  versionNumber    Int
+  originalFilename String
+  storedFilename   String
+  mimeType         String
+  sizeBytes        Int
+  filePath         String
+  issueDate        DateTime?
+  expiryDate       DateTime?
+  notes            String?
+  createdAt        DateTime            @default(now())
+  createdByUserId  String
+
+  product          Product             @relation(fields: [productId], references: [id])
+  createdBy        User                @relation("ProductDocCreator", fields: [createdByUserId], references: [id])
+
+  @@unique([productId, type, versionNumber])
+  @@index([productId, type, createdAt])
+  @@map("product_documents")
+}
+
+// ─── Inventory / Batch Models ───────────────────────────
+
+model RawMaterialLot {
+  id                  String               @id @default(cuid())
+  ingredientId        String
+  supplierName        String
+  supplierLotNumber   String
+  quantityReceivedKg  Float
+  quantityRemainingKg Float
+  expiryDate          DateTime?
+  status              RawMaterialLotStatus @default(AVAILABLE)
+  createdAt           DateTime             @default(now())
+  createdByUserId     String
+
+  ingredient          IngredientMaster     @relation(fields: [ingredientId], references: [id])
+  createdBy           User                 @relation("LotCreator", fields: [createdByUserId], references: [id])
+
+  batchConsumptions   BatchConsumption[]
+  alerts              SystemAlert[]
+
+  @@index([ingredientId])
+  @@index([status])
+  @@index([expiryDate])
+  @@map("raw_material_lots")
+}
+
+model Batch {
+  id                   String             @id @default(cuid())
+  productId            String
+  batchNumber          String             @unique
+  productionQuantityKg Float
+  manufacturingDate    DateTime
+  expiryDate           DateTime
+  status               BatchStatus        @default(CREATED)
+  formulationVersionId String
+  labelVersionId       String
+  createdAt            DateTime           @default(now())
+  createdByUserId      String
+
+  product              Product            @relation(fields: [productId], references: [id])
+  formulationVersion   FormulationVersion @relation("BatchFormulationVersion", fields: [formulationVersionId], references: [id])
+  labelVersion         LabelMetadata      @relation("BatchLabelVersion", fields: [labelVersionId], references: [id])
+  createdBy            User               @relation("BatchCreator", fields: [createdByUserId], references: [id])
+
+  consumptions         BatchConsumption[]
+  finishedGoodLot      FinishedGoodLot?
+
+  @@index([productId])
+  @@map("batches")
+}
+
+model BatchConsumption {
+  id                 String         @id @default(cuid())
+  batchId            String
+  rawMaterialLotId   String
+  quantityConsumedKg Float
+
+  batch              Batch          @relation(fields: [batchId], references: [id])
+  rawMaterialLot     RawMaterialLot @relation(fields: [rawMaterialLotId], references: [id])
+
+  @@index([batchId])
+  @@index([rawMaterialLotId])
+  @@map("batch_consumptions")
+}
+
+// ─── System Alerts ────────────────────────────────────
+
+model SystemAlert {
+  id               String      @id @default(cuid())
+  type             AlertType
+  status           AlertStatus @default(ACTIVE)
+  title            String
+  message          String
+
+  ingredientId     String?
+  lotId            String?
+  productId        String?
+  documentId       String?
+
+  dedupeKey        String      @unique
+
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  resolvedAt       DateTime?
+  resolvedByUserId String?
+
+  ingredient       IngredientMaster? @relation(fields: [ingredientId], references: [id])
+  lot              RawMaterialLot?   @relation(fields: [lotId], references: [id])
+  product          Product?          @relation(fields: [productId], references: [id])
+  resolvedBy       User?             @relation("AlertResolver", fields: [resolvedByUserId], references: [id])
+
+  @@index([status])
+  @@index([type])
+  @@index([productId])
+  @@map("system_alerts")
+}
+
+// ─── Finished Goods ──────────────────────────────────
+
+model FinishedGoodLot {
+  id                    String                @id @default(cuid())
+  productId             String
+  batchId               String
+
+  unitsProduced         Int
+  unitsRemaining        Int
+
+  packNetContentMl      Int
+  fillDensityGPerMl     Float
+  totalFillableMl       Float
+  leftoverMl            Float
+
+  status                FinishedGoodLotStatus @default(AVAILABLE)
+
+  createdAt             DateTime              @default(now())
+  createdByUserId       String
+
+  product               Product               @relation(fields: [productId], references: [id])
+  batch                 Batch                 @relation(fields: [batchId], references: [id])
+  createdBy             User                  @relation(fields: [createdByUserId], references: [id])
+
+  @@unique([batchId])
+  @@index([productId])
+  @@index([status])
+  @@map("finished_good_lots")
+}
+
+// ─── Greenfield Ideation Canvas ─────────────────────────
+
+model ProductIdeation {
+  id                  String   @id @default(cuid())
+  productId           String
+
+  conceptNotes        String?
+  targetAudience      String?
+  ingredientsVision   String?
+  marketPositioning   String?
+  competitorLinksJson Json?
+  additionalNotes     String?
+
+  versionNumber       Int      @default(1)
+  isActive            Boolean  @default(true)
+
+  createdAt           DateTime @default(now())
+  createdByUserId     String
+
+  product             Product  @relation(fields: [productId], references: [id])
+  createdBy           User     @relation(fields: [createdByUserId], references: [id])
+
+  @@index([productId])
+  @@index([createdAt])
+  @@map("product_ideations")
+}
+
+// ─── Greenfield Ideas (Independent from Products) ─────────
+
+model GreenfieldIdea {
+  id                 String           @id @default(cuid())
+  title              String
+  conceptNotes       String?
+  targetAudience     String?
+  ingredientsVision  String?
+  marketPositioning  String?
+  additionalNotes    String?
+
+  status             GreenfieldStatus @default(DRAFT)
+
+  convertedProductId String?
+  convertedProduct   Product?         @relation("ConvertedProduct", fields: [convertedProductId], references: [id])
+
+  createdById        String
+  createdBy          User             @relation("GreenfieldCreator", fields: [createdById], references: [id])
+
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([status])
+  @@map("greenfield_ideas")
+}
+
+// ─── Compliance Request / Approval / Generated Artifacts ──
+
+model ComplianceRequest {
+  id                         String                  @id @default(cuid())
+  productId                  String
+  uploadId                   String
+  regionScope                String[]
+  status                     ComplianceRequestStatus @default(DRAFT)
+  aicisSnapshotId            String?
+  bannedRestrictedSnapshotId String?
+  eligibleAt                 DateTime?
+  eligibilityReportJson      Json?
+  createdByUserId            String
+  createdAt                  DateTime                @default(now())
+  updatedAt                  DateTime                @updatedAt
+
+  // 3-state eligibility columns
+  eligibilityStatus          EligibilityStatus?
+  ingredientMatchingStatus   CheckStatus?
+  aicisScrutinyStatus        CheckStatus?
+  bannedRestrictedStatus     CheckStatus?
+  issuesJson                 Json?
+  evidenceRequiredJson       Json?
+  checkedAt                  DateTime?
+  checkedByUserId            String?
+  strictMode                 Boolean                 @default(false)
+  approvedByUserId           String?
+  approvedAt                 DateTime?
+
+  product                    Product                 @relation("ProductComplianceRequests", fields: [productId], references: [id])
+  upload                     FormulationUpload       @relation("UploadComplianceRequests", fields: [uploadId], references: [id])
+  createdBy                  User                    @relation("ComplianceRequestCreator", fields: [createdByUserId], references: [id])
+  checkedBy                  User?                   @relation("ComplianceRequestChecker", fields: [checkedByUserId], references: [id])
+  approvedBy                 User?                   @relation("ComplianceRequestApprover", fields: [approvedByUserId], references: [id])
+
+  approvals                  ComplianceApproval[]
+  artifacts                  GeneratedArtifact[]
+
+  @@index([productId, createdAt])
+  @@map("compliance_requests")
+}
+
+model ComplianceApproval {
+  id              String           @id @default(cuid())
+  requestId       String
+  approverUserId  String
+  decision        ApprovalDecision
+  comment         String?
+  decidedAt       DateTime         @default(now())
+
+  request         ComplianceRequest @relation(fields: [requestId], references: [id])
+  approver        User              @relation("ComplianceApprovalApprover", fields: [approverUserId], references: [id])
+
+  @@unique([requestId, approverUserId])
+  @@index([requestId])
+  @@map("compliance_approvals")
+}
+
+model GeneratedArtifact {
+  id               String               @id @default(cuid())
+  requestId        String
+  productId        String
+  type             GeneratedArtifactType
+  versionNumber    Int
+  contentMarkdown  String?              @db.Text
+  contentJson      Json?
+  generationMeta   Json?
+  createdAt        DateTime             @default(now())
+  createdByUserId  String
+
+  request          ComplianceRequest    @relation(fields: [requestId], references: [id])
+  product          Product              @relation("ProductGeneratedArtifacts", fields: [productId], references: [id])
+  createdBy        User                 @relation("ArtifactCreator", fields: [createdByUserId], references: [id])
+
+  @@unique([requestId, type, versionNumber])
+  @@index([productId, type])
+  @@map("generated_artifacts")
+}
+
+// ─── AICIS Inventory & Scrutiny ─────────────────────────
+
+model AicisInventorySnapshot {
+  id               String    @id @default(cuid())
+  versionName      String
+  regionCode       String    @default("AU")
+  asOfDate         DateTime
+  sourceFileName   String
+  fileSha256       String
+  rowCount         Int       @default(0)
+  isActive         Boolean   @default(false)
+  effectiveAt      DateTime?
+  notes            String?
+  importedAt       DateTime  @default(now())
+  importedByUserId String
+
+  importedBy       User      @relation("AicisSnapshotImporter", fields: [importedByUserId], references: [id])
+
+  chemicals        AicisInventoryChemical[]
+  scrutinies       UploadAicisScrutinySnapshot[]
+
+  @@unique([regionCode, fileSha256])
+  @@index([regionCode, isActive])
+  @@map("aicis_inventory_snapshots")
+}
+
+model AicisInventoryChemical {
+  id                     String   @id @default(cuid())
+  snapshotId             String
+  crNo                   String
+  casNo                  String?
+  chemicalName           String?
+  approvedName           String
+  molecularFormula       String?
+  specificInfoRequirements String?
+  definedScope           String?
+  conditionsOfUse        String?
+  prescribedInfo         String?
+  normalizedApprovedName String
+  normalizedCasNo        String?
+  additionalJson         Json?
+
+  snapshot               AicisInventorySnapshot @relation(fields: [snapshotId], references: [id])
+
+  @@unique([snapshotId, crNo])
+  @@index([snapshotId, normalizedCasNo])
+  @@index([snapshotId, normalizedApprovedName])
+  @@index([crNo])
+  @@map("aicis_inventory_chemicals")
+}
+
+model UploadAicisScrutinySnapshot {
+  id              String   @id @default(cuid())
+  uploadId        String
+  snapshotId      String
+  regionCode      String
+  status          String   // PASS | FAIL
+  totalRows       Int
+  foundCount      Int
+  notFoundCount   Int
+  missingCasCount Int      @default(0)
+  ambiguousCount  Int      @default(0)
+  notListedCount    Int      @default(0)
+  needsReviewCount  Int      @default(0)
+  unmatchedCount    Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  createdByUserId String
+
+  upload          FormulationUpload      @relation(fields: [uploadId], references: [id])
+  snapshot        AicisInventorySnapshot @relation(fields: [snapshotId], references: [id])
+  createdBy       User                   @relation("AicisScrutinyCreator", fields: [createdByUserId], references: [id])
+
+  findings        UploadAicisScrutinyRowFinding[]
+
+  @@index([uploadId, regionCode, isActive])
+  @@map("upload_aicis_scrutiny_snapshots")
+}
+
+model UploadAicisScrutinyRowFinding {
+  id                  String   @id @default(cuid())
+  scrutinySnapshotId  String
+  uploadRowId         String
+  result              String   // FOUND | NOT_FOUND | MISSING_CAS
+  matchMethod         String   // CAS | NONE
+  casUsed             String?
+  aicisChemicalId     String?
+  matchedCrNo         String?
+  matchedCasNo        String?
+  matchedApprovedName       String?
+  evidenceJson              Json
+  commonChemistryName       String?
+  commonChemistryUrl        String?
+  commonChemistryStatus     String?    // FOUND | NOT_FOUND | NEEDS_REVIEW
+  commonChemistryReason     String?
+  commonChemistryFetchedAt  DateTime?
+  createdAt                 DateTime @default(now())
+
+  scrutinySnapshot    UploadAicisScrutinySnapshot @relation(fields: [scrutinySnapshotId], references: [id])
+  uploadRow           FormulationUploadRow        @relation(fields: [uploadRowId], references: [id])
+
+  @@unique([scrutinySnapshotId, uploadRowId])
+  @@map("upload_aicis_scrutiny_row_findings")
+}
+
+// ─── Common Chemistry CAS Cache ─────────────────────────
+
+model CommonChemistryCasCache {
+  id        String   @id @default(cuid())
+  casNo     String   @unique
+  exists    Boolean
+  title     String?
+  sourceUrl String?
+  fetchedAt DateTime @default(now())
+
+  @@map("common_chemistry_cas_cache")
+}
+
+// ─── Restricted Chemical Index (Offline Dataset) ────────
+
+enum EvidenceSourceStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum RestrictedChemicalStatus {
+  BANNED
+  RESTRICTED
+  LISTED
+  NOT_LISTED
+  UNKNOWN
+}
+
+model EvidenceSource {
+  id             String               @id @default(cuid())
+  name           String
+  versionLabel   String
+  effectiveDate  DateTime?
+  fileKey        String?
+  hashSha256     String?
+  status         EvidenceSourceStatus @default(ACTIVE)
+  notes          String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  createdByUserId String
+
+  createdBy      User                 @relation("EvidenceSourceCreator", fields: [createdByUserId], references: [id])
+  chemicals      RestrictedChemicalIndex[]
+
+  @@index([status])
+  @@map("evidence_sources")
+}
+
+model RestrictedChemicalIndex {
+  id              String                  @id @default(cuid())
+  sourceId        String
+  casNo           String
+  chemicalName    String?
+  status          RestrictedChemicalStatus
+  reason          String?
+  sourceLineRef   String?
+  evidenceUrl     String?
+  createdAt       DateTime                @default(now())
+
+  source          EvidenceSource          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, casNo])
+  @@index([casNo])
+  @@index([status])
+  @@map("restricted_chemical_index")
+}
+
+// ─── Banned / Restricted Chemicals ──────────────────────
+
+enum BannedRestrictedLinkType {
+  HUB
+  ROTTERDAM_IMPORT
+  ROTTERDAM_EXPORT
+  MINAMATA
+  STOCKHOLM
+  POISONS_STANDARD
+  ROTTERDAM_PIC
+  STOCKHOLM_POP
+  MINAMATA_TREATY
+  OTHER
+}
+
+enum BannedRestrictedFetchStatus {
+  SUCCESS
+  FAILED
+}
+
+model BannedRestrictedSnapshot {
+  id              String   @id @default(cuid())
+  sourceUrl       String
+  fetchedAt       DateTime @default(now())
+  contentHash     String
+  isComplete      Boolean  @default(false)
+  notes           String?
+  createdByUserId String
+
+  createdBy       User     @relation("BannedRestrictedSnapshotCreator", fields: [createdByUserId], references: [id])
+
+  sources         BannedRestrictedSource[]
+  chemicals       BannedRestrictedChemical[]
+
+  @@index([fetchedAt])
+  @@map("banned_restricted_snapshots")
+}
+
+model BannedRestrictedSource {
+  id              String                      @id @default(cuid())
+  snapshotId      String
+  sourceName      String
+  sourceUrl       String
+  linkType        BannedRestrictedLinkType
+  fetchStatus     BannedRestrictedFetchStatus
+  fetchedAt       DateTime                    @default(now())
+  contentHash     String?
+  rawContentSize  Int?
+  rawHtml         String?                     @db.Text
+  screenshotPath  String?
+  errorMessage    String?
+
+  snapshot        BannedRestrictedSnapshot    @relation(fields: [snapshotId], references: [id])
+  chemicals       BannedRestrictedChemical[]
+
+  @@index([snapshotId])
+  @@map("banned_restricted_sources")
+}
+
+model BannedRestrictedChemical {
+  id              String   @id @default(cuid())
+  snapshotId      String
+  sourceId        String
+  normalizedCasNo String
+  chemicalName    String?
+  matchText       String?
+  evidenceUrl     String
+  createdAt       DateTime @default(now())
+
+  snapshot        BannedRestrictedSnapshot @relation(fields: [snapshotId], references: [id])
+  source          BannedRestrictedSource   @relation(fields: [sourceId], references: [id])
+
+  @@unique([snapshotId, sourceId, normalizedCasNo])
+  @@index([normalizedCasNo])
+  @@map("banned_restricted_chemicals")
+}

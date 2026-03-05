@@ -1,0 +1,26 @@
+Rotterdam Convention - Apply for annual import authorisation
+Source: https://www.industrialchemicals.gov.au
+
+The chemicals listed in the Rotterdam Convention that require import authorisation include:
+
+Chemical Name                          CAS Number
+Aldrin                                 309-00-2
+Chlordane                              57-74-9
+DDT                                    50-29-3
+Dieldrin                               60-57-1
+Endrin                                 72-20-8
+Heptachlor                             76-44-8
+Hexachlorobenzene                      118-74-1
+Lindane                                58-89-9
+Mercury compounds                      7439-97-6
+Mirex                                  2385-85-5
+Toxaphene                              8001-35-2
+Polychlorinated biphenyls (PCBs)       1336-36-3
+Endosulfan                             115-29-7
+Parathion                              56-38-2
+Monocrotophos                          6923-22-4
+Methamidophos                          10265-92-6
+Phosphamidon                           13171-21-6
+Pentachlorophenol                      87-86-5
+Alachlor                               15972-60-8
+Aldicarb                               116-06-3

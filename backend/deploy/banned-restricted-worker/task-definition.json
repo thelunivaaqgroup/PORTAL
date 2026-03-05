@@ -1,0 +1,37 @@
+{
+  "family": "banned-restricted-sync-worker",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "${EXECUTION_ROLE_ARN}",
+  "taskRoleArn": "${TASK_ROLE_ARN}",
+  "containerDefinitions": [
+    {
+      "name": "sync-worker",
+      "image": "${ECR_IMAGE_URI}",
+      "essential": true,
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" }
+      ],
+      "secrets": [
+        {
+          "name": "DATABASE_URL",
+          "valueFrom": "${DATABASE_URL_SECRET_ARN}"
+        },
+        {
+          "name": "ACTOR_USER_ID",
+          "valueFrom": "${ACTOR_USER_ID_SECRET_ARN}"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/banned-restricted-sync",
+          "awslogs-region": "${AWS_REGION}",
+          "awslogs-stream-prefix": "sync"
+        }
+      }
+    }
+  ]
+}
