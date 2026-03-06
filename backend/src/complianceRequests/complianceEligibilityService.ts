@@ -1,6 +1,7 @@
 import { prisma } from "../prisma.js";
 import { logger } from "../logger.js";
 import { writeAuditLog } from "../audit/audit.service.js";
+import { upsertComplianceFailureAlert } from "../alerts/alerts.service.js";
 import type { CheckStatus, EligibilityStatus } from "@prisma/client";
 
 // ── Types ──
@@ -891,6 +892,7 @@ export async function runEligibilityChecks(
     where: { id: requestId },
     select: {
       id: true,
+      productId: true,
       uploadId: true,
       status: true,
       aicisSnapshotId: true,
@@ -985,6 +987,17 @@ export async function runEligibilityChecks(
     action: "BANNED_RESTRICTED_CHECK_RUN",
     metadata: { status: brCheck.status, issueCount: brCheck.issues.length },
   });
+
+  if (eligibilityStatus === "NOT_ELIGIBLE" && request.productId) {
+    const reason = brCheck.status === "FAIL"
+      ? "Banned/Restricted scrutiny failed."
+      : "One or more compliance checks failed.";
+    await upsertComplianceFailureAlert({
+      productId: request.productId,
+      requestId,
+      message: reason,
+    });
+  }
 
   return report;
 }

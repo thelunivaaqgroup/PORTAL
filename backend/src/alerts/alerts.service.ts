@@ -222,12 +222,73 @@ export async function recomputeReadyForSaleForProduct(productId: string): Promis
 }
 
 /* ------------------------------------------------------------------ */
+/*  Compliance failure alert (called from eligibility service)        */
+/* ------------------------------------------------------------------ */
+
+export async function upsertComplianceFailureAlert(params: {
+  productId: string;
+  requestId: string;
+  message: string;
+}): Promise<void> {
+  const dedupeKey = `COMPLIANCE_FAILURE:${params.requestId}`;
+  await upsertAlert({
+    dedupeKey,
+    type: "COMPLIANCE_FAILURE",
+    title: "Compliance validation failed",
+    message: params.message,
+    productId: params.productId,
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Stage delay alerts (product stuck at stage beyond SLA)           */
+/* ------------------------------------------------------------------ */
+
+const STAGE_DELAY_SLA_DAYS = 14;
+const STAGE_DELAY_TRACKED_STAGES: Array<"R_AND_D" | "COMPLIANCE_READY" | "PACKAGING_READY"> = [
+  "R_AND_D",
+  "COMPLIANCE_READY",
+  "PACKAGING_READY",
+];
+
+export async function computeStageDelayAlerts(): Promise<void> {
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - STAGE_DELAY_SLA_DAYS * 24 * 60 * 60 * 1000);
+
+  const products = await prisma.product.findMany({
+    where: { stage: { in: STAGE_DELAY_TRACKED_STAGES } },
+    select: { id: true, name: true, skuCode: true, stage: true },
+  });
+
+  for (const product of products) {
+    const latestEntry = await prisma.productStageEvent.findFirst({
+      where: { productId: product.id, toStage: product.stage },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
+    if (!latestEntry || latestEntry.createdAt > cutoff) continue;
+
+    const daysStuck = Math.floor(
+      (now.getTime() - latestEntry.createdAt.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    await upsertAlert({
+      dedupeKey: `STAGE_DELAY:${product.id}`,
+      type: "STAGE_DELAY",
+      title: `Stage delay: ${product.name || product.skuCode}`,
+      message: `Product at ${product.stage} for ${daysStuck} day(s) (SLA: ${STAGE_DELAY_SLA_DAYS} days)`,
+      productId: product.id,
+    });
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Full sweep                                                         */
 /* ------------------------------------------------------------------ */
 
 export async function runAlertsAndStageSweep(): Promise<void> {
   await computeInventoryAlerts();
   await computeDocumentExpiryAlerts();
+  await computeStageDelayAlerts();
 
   // Auto READY_FOR_SALE for products with released batches
   const productsWithReleasedBatches = await prisma.batch.findMany({

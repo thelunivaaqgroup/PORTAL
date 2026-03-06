@@ -16,6 +16,8 @@ import UsersListPage from "../features/users/pages/UsersListPage";
 import AicisInventoryPage from "../features/aicis/AicisInventoryPage";
 import AicisChemicalDetailPage from "../features/aicis/AicisChemicalDetailPage";
 import BannedRestrictedRecordPage from "../features/bannedRestricted/pages/BannedRestrictedRecordPage";
+import AuditLogPage from "../features/audit/pages/AuditLogPage";
+import ComplianceHubPage from "../features/compliance/pages/ComplianceHubPage";
 import NotFound from "../pages/NotFound";
 
 export const router = createBrowserRouter([
@@ -88,6 +90,14 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            path: "/compliance",
+            element: (
+              <RequirePermission permission="compliance:read">
+                <ComplianceHubPage />
+              </RequirePermission>
+            ),
+          },
+          {
             path: "/regulatory/aicis",
             element: (
               <RequirePermission permission="aicis:read">
@@ -108,6 +118,14 @@ export const router = createBrowserRouter([
             element: (
               <RequirePermission permission="aicis:read">
                 <BannedRestrictedRecordPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: "/audit",
+            element: (
+              <RequirePermission permission="audit:read">
+                <AuditLogPage />
               </RequirePermission>
             ),
           },

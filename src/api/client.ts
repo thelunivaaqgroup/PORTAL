@@ -78,6 +78,20 @@ import type {
 } from "../features/compliance/types";
 import type { UserApiRow, CreateUserPayload } from "../features/users/types";
 
+export type AuditLogEntry = {
+  id: string;
+  at: string;
+  actorUserId: string | null;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  ip: string | null;
+  userAgent: string | null;
+  requestId: string;
+  metadata: Record<string, unknown>;
+  actor: { id: string; email: string; fullName: string } | null;
+};
+
 /* -------------------------------------------------- */
 /*  Helpers                                            */
 /* -------------------------------------------------- */
@@ -608,6 +622,15 @@ const realComplianceRequests = {
       `/products/${productId}/compliance-requests/latest`,
     );
   },
+  async list(params?: { status?: string; limit?: number }) {
+    const qp = new URLSearchParams();
+    if (params?.status) qp.set("status", params.status);
+    if (params?.limit != null) qp.set("limit", String(params.limit));
+    const qs = qp.toString();
+    return request<{ requests: ComplianceRequest[] }>(
+      `/compliance-requests${qs ? `?${qs}` : ""}`,
+    );
+  },
   async getById(id: string) {
     return request<{ request: ComplianceRequest }>(
       `/compliance-requests/${id}`,
@@ -717,6 +740,37 @@ const realUsers = {
 };
 
 /* -------------------------------------------------- */
+/*  Audit log adapters                                 */
+/* -------------------------------------------------- */
+
+const realAudit = {
+  async list(params?: {
+    from?: string;
+    to?: string;
+    actorUserId?: string;
+    entityType?: string;
+    action?: string;
+    limit?: number;
+    cursor?: string;
+  }) {
+    const qp = new URLSearchParams();
+    if (params?.from) qp.set("from", params.from);
+    if (params?.to) qp.set("to", params.to);
+    if (params?.actorUserId) qp.set("actorUserId", params.actorUserId);
+    if (params?.entityType) qp.set("entityType", params.entityType);
+    if (params?.action) qp.set("action", params.action);
+    if (params?.limit != null) qp.set("limit", String(params.limit));
+    if (params?.cursor) qp.set("cursor", params.cursor);
+    const qs = qp.toString();
+    return request<{
+      logs: AuditLogEntry[];
+      nextCursor: string | null;
+      hasMore: boolean;
+    }>(`/audit-logs${qs ? `?${qs}` : ""}`);
+  },
+};
+
+/* -------------------------------------------------- */
 /*  Singleton API client                               */
 /* -------------------------------------------------- */
 
@@ -741,4 +795,5 @@ export const api = {
   restricted: realRestricted,
   complianceRequests: realComplianceRequests,
   users: realUsers,
+  audit: realAudit,
 } as const;

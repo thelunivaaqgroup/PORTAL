@@ -3,7 +3,9 @@ export type AlertType =
   | "LOT_EXPIRING_SOON"
   | "LOT_EXPIRED"
   | "DOC_EXPIRING_SOON"
-  | "DOC_EXPIRED";
+  | "DOC_EXPIRED"
+  | "COMPLIANCE_FAILURE"
+  | "STAGE_DELAY";
 
 export type AlertStatus = "ACTIVE" | "RESOLVED";
 
@@ -13,6 +15,8 @@ export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   LOT_EXPIRED: "Lot Expired",
   DOC_EXPIRING_SOON: "Doc Expiring Soon",
   DOC_EXPIRED: "Doc Expired",
+  COMPLIANCE_FAILURE: "Compliance Failure",
+  STAGE_DELAY: "Stage Delay",
 };
 
 export type SystemAlert = {

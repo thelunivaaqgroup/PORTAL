@@ -1909,6 +1909,7 @@ function ApprovalsTab({ productId }: { productId: string }) {
   const [comment, setComment] = useState("");
   const [expandedArtifact, setExpandedArtifact] = useState<string | null>(null);
   const [downloadingReport, setDownloadingReport] = useState<"xlsx" | "pdf" | "csv" | null>(null);
+  const [downloadingArtifactExport, setDownloadingArtifactExport] = useState<{ artifactId: string; format: "pdf" | "docx" } | null>(null);
 
   const handleDownloadReport = useCallback(async (format: "xlsx" | "pdf" | "csv") => {
     setDownloadingReport(format);
@@ -1943,6 +1944,45 @@ function ApprovalsTab({ productId }: { productId: string }) {
       setDownloadingReport(null);
     }
   }, [productId, toast]);
+
+  const handleDownloadArtifactExport = useCallback(
+    async (artifactId: string, format: "pdf" | "docx") => {
+      if (!request) return;
+      setDownloadingArtifactExport({ artifactId, format });
+      try {
+        const token = tokenStore.getAccessToken();
+        const url = `${env.API_BASE_URL}/compliance-requests/${request.id}/artifacts/${artifactId}/export.${format}`;
+        const resp = await fetch(url, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!resp.ok) {
+          const body = await resp.json().catch(() => null);
+          const msg =
+            body && typeof body === "object" && "message" in body
+              ? (body as { message: string }).message
+              : `Download failed (${resp.status})`;
+          toast("error", msg);
+          return;
+        }
+        const blob = await resp.blob();
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        const disposition = resp.headers.get("Content-Disposition") ?? "";
+        const match = disposition.match(/filename="?([^"]+)"?/);
+        a.download = match?.[1] ?? `artifact.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(a.href);
+        toast("success", `${format === "pdf" ? "PDF" : "Word"} downloaded.`);
+      } catch (err) {
+        toast("error", err instanceof Error ? err.message : "Download failed");
+      } finally {
+        setDownloadingArtifactExport(null);
+      }
+    },
+    [request, toast],
+  );
 
   const is404 =
     error &&
@@ -2478,6 +2518,34 @@ function ApprovalsTab({ productId }: { productId: string }) {
                             >
                               Export .md
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleDownloadArtifactExport(artifact.id, "pdf")}
+                              disabled={
+                                downloadingArtifactExport?.artifactId === artifact.id &&
+                                downloadingArtifactExport?.format === "pdf"
+                              }
+                            >
+                              {downloadingArtifactExport?.artifactId === artifact.id &&
+                              downloadingArtifactExport?.format === "pdf"
+                                ? "Downloading..."
+                                : "Download PDF"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleDownloadArtifactExport(artifact.id, "docx")}
+                              disabled={
+                                downloadingArtifactExport?.artifactId === artifact.id &&
+                                downloadingArtifactExport?.format === "docx"
+                              }
+                            >
+                              {downloadingArtifactExport?.artifactId === artifact.id &&
+                              downloadingArtifactExport?.format === "docx"
+                                ? "Downloading..."
+                                : "Download Word"}
+                            </Button>
                           </div>
                         </div>
                       ) : artifact.contentJson ? (
@@ -2497,6 +2565,34 @@ function ApprovalsTab({ productId }: { productId: string }) {
                               }}
                             >
                               Copy JSON
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleDownloadArtifactExport(artifact.id, "pdf")}
+                              disabled={
+                                downloadingArtifactExport?.artifactId === artifact.id &&
+                                downloadingArtifactExport?.format === "pdf"
+                              }
+                            >
+                              {downloadingArtifactExport?.artifactId === artifact.id &&
+                              downloadingArtifactExport?.format === "pdf"
+                                ? "Downloading..."
+                                : "Download PDF"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleDownloadArtifactExport(artifact.id, "docx")}
+                              disabled={
+                                downloadingArtifactExport?.artifactId === artifact.id &&
+                                downloadingArtifactExport?.format === "docx"
+                              }
+                            >
+                              {downloadingArtifactExport?.artifactId === artifact.id &&
+                              downloadingArtifactExport?.format === "docx"
+                                ? "Downloading..."
+                                : "Download Word"}
                             </Button>
                           </div>
                         </div>

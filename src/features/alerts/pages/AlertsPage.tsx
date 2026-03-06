@@ -16,6 +16,8 @@ const ALERT_TYPE_VARIANTS: Record<AlertType, "error" | "warning" | "neutral"> = 
   LOT_EXPIRED: "error",
   DOC_EXPIRING_SOON: "warning",
   DOC_EXPIRED: "error",
+  COMPLIANCE_FAILURE: "error",
+  STAGE_DELAY: "warning",
 };
 
 const ALL_TYPES: AlertType[] = [
@@ -24,6 +26,8 @@ const ALL_TYPES: AlertType[] = [
   "LOT_EXPIRED",
   "DOC_EXPIRING_SOON",
   "DOC_EXPIRED",
+  "COMPLIANCE_FAILURE",
+  "STAGE_DELAY",
 ];
 
 export default function AlertsPage() {

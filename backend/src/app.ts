@@ -20,6 +20,7 @@ import { aicisRouter } from "./aicis/aicis.routes.js";
 import { bannedRestrictedRouter } from "./bannedRestricted/bannedRestricted.routes.js";
 import { restrictedRouter } from "./restricted/restricted.routes.js";
 import { complianceRequestsRouter } from "./complianceRequests/complianceRequests.routes.js";
+import { auditRouter } from "./audit/audit.routes.js";
 
 export const app = express();
 
@@ -68,6 +69,7 @@ app.use("/greenfield", greenfieldRouter);
 app.use("/aicis", aicisRouter);
 app.use("/banned-restricted", bannedRestrictedRouter);
 app.use("/restricted", restrictedRouter);
+app.use("/", auditRouter);
 app.use("/", complianceRequestsRouter);
 
 // Legacy formulation routes — 410 GONE

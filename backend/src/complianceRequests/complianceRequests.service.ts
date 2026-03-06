@@ -96,6 +96,24 @@ export async function createComplianceRequest(
 }
 
 /**
+ * List compliance requests for hub (recent first).
+ * Optional filter by status.
+ */
+export async function listComplianceRequests(opts?: { status?: string; limit?: number }) {
+  const limit = Math.min(100, Math.max(1, opts?.limit ?? 50));
+  const requests = await prisma.complianceRequest.findMany({
+    where: opts?.status ? { status: opts.status as "DRAFT" | "IN_REVIEW" | "APPROVED" | "REJECTED" } : undefined,
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    include: {
+      product: { select: { id: true, name: true, skuCode: true } },
+      createdBy: { select: { id: true, fullName: true, email: true } },
+    },
+  });
+  return requests;
+}
+
+/**
  * Run 3-state eligibility checks on a compliance request.
  *
  * Per-check: PASS / NEEDS_REVIEW / FAIL

@@ -9,6 +9,7 @@ import {
   approveRequest,
   getComplianceRequest,
   getLatestForProduct,
+  listComplianceRequests,
   getArtifacts,
   getArtifactById,
   APPROVAL_POLICY,
@@ -16,6 +17,7 @@ import {
 import { buildComplianceReportData } from "./complianceReport.service.js";
 import { generateExcelReport } from "./complianceReport.excel.js";
 import { generatePdfReport } from "./complianceReport.pdf.js";
+import { generateArtifactPdf, generateArtifactDocx } from "./artifactExport.service.js";
 
 export const complianceRequestsRouter = Router();
 
@@ -92,6 +94,22 @@ complianceRequestsRouter.get(
       return;
     }
     res.json({ request });
+  },
+);
+
+// ──────────────────────────────────────────────────────────────
+// GET /compliance-requests
+// List compliance requests (for Compliance hub).
+// Query: status?, limit?
+// ──────────────────────────────────────────────────────────────
+complianceRequestsRouter.get(
+  "/compliance-requests",
+  async (req, res) => {
+    const status = req.query.status as string | undefined;
+    const limitRaw = req.query.limit as string | undefined;
+    const limit = limitRaw ? parseInt(limitRaw, 10) : undefined;
+    const requests = await listComplianceRequests({ status, limit });
+    res.json({ requests });
   },
 );
 
@@ -263,6 +281,47 @@ complianceRequestsRouter.get(
   async (req, res) => {
     const artifacts = await getArtifacts((req.params.id as string));
     res.json({ artifacts });
+  },
+);
+
+// ──────────────────────────────────────────────────────────────
+// GET /compliance-requests/:id/artifacts/:artifactId/export.pdf
+// GET /compliance-requests/:id/artifacts/:artifactId/export.docx
+// Export generated artifact as PDF or Word.
+// ──────────────────────────────────────────────────────────────
+complianceRequestsRouter.get(
+  "/compliance-requests/:id/artifacts/:artifactId/export.:format",
+  async (req, res) => {
+    const requestId = req.params.id as string;
+    const artifactId = req.params.artifactId as string;
+    const format = (req.params.format as string)?.toLowerCase();
+
+    if (format !== "pdf" && format !== "docx") {
+      res.status(400).json({ code: "INVALID_FORMAT", message: "Format must be pdf or docx" });
+      return;
+    }
+
+    const artifact = await getArtifactById(artifactId);
+    if (!artifact || artifact.requestId !== requestId) {
+      res.status(404).json({ code: "NOT_FOUND", message: "Artifact not found" });
+      return;
+    }
+
+    try {
+      const buffer = format === "pdf"
+        ? await generateArtifactPdf(artifact)
+        : await generateArtifactDocx(artifact);
+      const ext = format === "pdf" ? "pdf" : "docx";
+      const mimeType = format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      const filename = `${artifact.type.toLowerCase().replace(/_/g, "-")}-v${artifact.versionNumber}.${ext}`;
+
+      res.setHeader("Content-Type", mimeType);
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.send(buffer);
+    } catch (err) {
+      logger.error({ err, artifactId, format }, "Artifact export failed");
+      res.status(500).json({ code: "EXPORT_FAILED", message: "Failed to generate export" });
+    }
   },
 );
 
