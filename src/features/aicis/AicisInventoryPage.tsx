@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { FlaskConical } from "lucide-react";
 import { useAicisActive, useAicisImport } from "./hooks/useAicisApi";
 import PageHeader from "../../components/PageHeader";
 import Button from "../../components/Button";
@@ -61,6 +62,7 @@ export default function AicisInventoryPage() {
       <PageHeader
         title="AICIS Inventory (Australia)"
         subtitle="Australian Industrial Chemicals Introduction Scheme — official chemical inventory"
+        icon={FlaskConical}
       />
 
       {/* Active Snapshot Card */}

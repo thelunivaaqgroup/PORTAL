@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Users } from "lucide-react";
 import {
   useUsersQuery,
   useCreateUser,
@@ -140,7 +141,7 @@ export default function UsersListPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-rose-600 border-t-transparent" />
       </div>
     );
   }
@@ -150,6 +151,7 @@ export default function UsersListPage() {
       <PageHeader
         title="Users"
         subtitle="Manage user accounts and role assignments."
+        icon={Users}
         action={
           <Can permission="users:write">
             <Button onClick={() => setCreateOpen(true)}>Add User</Button>

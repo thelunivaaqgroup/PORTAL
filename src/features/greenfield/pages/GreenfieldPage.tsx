@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Lightbulb } from "lucide-react";
 import {
   useGreenfieldIdeas,
   useCreateGreenfield,
@@ -40,8 +41,9 @@ export default function GreenfieldPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Greenfield"
+        title="Greenfield Ideas"
         subtitle="Strategic ideation — before product creation"
+        icon={Lightbulb}
         action={
           <Can permission="greenfield:write">
             <Button onClick={() => setNewIdeaOpen(true)}>New Idea</Button>

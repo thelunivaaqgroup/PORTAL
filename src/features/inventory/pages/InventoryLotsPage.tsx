@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
+import { Warehouse, CheckCircle, Ban, AlertTriangle } from "lucide-react";
 import PageHeader from "../../../components/PageHeader";
+import StatCard from "../../../components/StatCard";
 import Button from "../../../components/Button";
 import Badge from "../../../components/Badge";
 import DataTable from "../../../components/DataTable";
@@ -134,7 +136,8 @@ export default function InventoryLotsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Raw Material Inventory"
-        subtitle={`${lots.length} lots`}
+        subtitle={`${lots.length} lots tracked`}
+        icon={Warehouse}
         action={
           <Can permission="inventory:write">
             <div className="flex gap-2">
@@ -146,6 +149,15 @@ export default function InventoryLotsPage() {
           </Can>
         }
       />
+
+      {!isLoading && lots.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard label="Total Lots" value={lots.length} icon={Warehouse} iconColor="text-rose-600" bgColor="bg-rose-50" />
+          <StatCard label="Available" value={lots.filter(l => l.status === "AVAILABLE").length} icon={CheckCircle} iconColor="text-emerald-600" bgColor="bg-emerald-50" />
+          <StatCard label="Blocked" value={lots.filter(l => l.status === "BLOCKED").length} icon={Ban} iconColor="text-amber-600" bgColor="bg-amber-50" />
+          <StatCard label="Expired" value={lots.filter(l => l.status === "EXPIRED").length} icon={AlertTriangle} iconColor="text-red-600" bgColor="bg-red-50" />
+        </div>
+      )}
 
       {/* Search */}
       <div className="max-w-sm">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ScrollText } from "lucide-react";
 import PageHeader from "../../../components/PageHeader";
 import { Card, CardBody } from "../../../components/Card";
 import Button from "../../../components/Button";
@@ -40,8 +41,9 @@ export default function AuditLogPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Audit log"
+        title="Audit Log"
         subtitle="System activity for compliance and inspection"
+        icon={ScrollText}
       />
 
       <Card>

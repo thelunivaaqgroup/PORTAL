@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Bell } from "lucide-react";
 import PageHeader from "../../../components/PageHeader";
 import Button from "../../../components/Button";
 import Badge from "../../../components/Badge";
@@ -65,7 +66,7 @@ export default function AlertsPage() {
   }
 
   const selectCls =
-    "rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
+    "rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500";
 
   const columns: Column<SystemAlert>[] = [
     {
@@ -130,6 +131,7 @@ export default function AlertsPage() {
       <PageHeader
         title="System Alerts"
         subtitle={`${alerts.length} alert(s)`}
+        icon={Bell}
         action={
           <Can permission="manufacturing:approve">
             <Button

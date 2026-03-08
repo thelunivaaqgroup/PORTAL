@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { ShieldCheck, FileCheck, FileX, FileClock, FileEdit } from "lucide-react";
 import PageHeader from "../../../components/PageHeader";
+import StatCard from "../../../components/StatCard";
 import { Card, CardBody } from "../../../components/Card";
 import Badge from "../../../components/Badge";
 import Button from "../../../components/Button";
@@ -45,9 +47,26 @@ export default function ComplianceHubPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Compliance"
+        title="Compliance Hub"
         subtitle="Regulatory and compliance requests — open a product to run checks or approve"
+        icon={ShieldCheck}
       />
+
+      {!isLoading && requests.length > 0 && (() => {
+        const draft = requests.filter(r => r.status === "DRAFT").length;
+        const inReview = requests.filter(r => r.status === "IN_REVIEW").length;
+        const approved = requests.filter(r => r.status === "APPROVED").length;
+        const rejected = requests.filter(r => r.status === "REJECTED").length;
+        return (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <StatCard label="Total" value={requests.length} icon={ShieldCheck} iconColor="text-rose-600" bgColor="bg-rose-50" />
+            <StatCard label="Draft" value={draft} icon={FileEdit} iconColor="text-gray-500" bgColor="bg-gray-50" />
+            <StatCard label="In Review" value={inReview} icon={FileClock} iconColor="text-amber-600" bgColor="bg-amber-50" />
+            <StatCard label="Approved" value={approved} icon={FileCheck} iconColor="text-emerald-600" bgColor="bg-emerald-50" />
+            <StatCard label="Rejected" value={rejected} icon={FileX} iconColor="text-red-600" bgColor="bg-red-50" />
+          </div>
+        );
+      })()}
 
       <Card>
         <CardBody className="space-y-4">

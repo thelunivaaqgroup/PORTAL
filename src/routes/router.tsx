@@ -18,6 +18,7 @@ import AicisChemicalDetailPage from "../features/aicis/AicisChemicalDetailPage";
 import BannedRestrictedRecordPage from "../features/bannedRestricted/pages/BannedRestrictedRecordPage";
 import AuditLogPage from "../features/audit/pages/AuditLogPage";
 import ComplianceHubPage from "../features/compliance/pages/ComplianceHubPage";
+import AlertsPage from "../features/alerts/pages/AlertsPage";
 import NotFound from "../pages/NotFound";
 
 export const router = createBrowserRouter([
@@ -46,6 +47,14 @@ export const router = createBrowserRouter([
             element: (
               <RequirePermission permission="dashboard:read">
                 <Dashboard />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: "/alerts",
+            element: (
+              <RequirePermission permission="dashboard:read">
+                <AlertsPage />
               </RequirePermission>
             ),
           },

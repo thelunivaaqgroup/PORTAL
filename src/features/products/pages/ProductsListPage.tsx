@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { FolderOpen, Package } from "lucide-react";
 import { useRanges, useCreateRange, useDeleteRange, useUpdateRange } from "../hooks/useProductsApi";
 import type { ProductRange } from "../types";
 import PageHeader from "../../../components/PageHeader";
+import StatCard from "../../../components/StatCard";
 import Button from "../../../components/Button";
 import Badge from "../../../components/Badge";
 import Modal from "../../../components/Modal";
@@ -35,12 +37,20 @@ export default function ProductsListPage() {
       <PageHeader
         title="Products"
         subtitle="Manage product ranges and formulation lifecycle"
+        icon={Package}
         action={
           <Can permission="ranges:write">
             <Button onClick={() => setNewFolderOpen(true)}>New Folder</Button>
           </Can>
         }
       />
+
+      {!isLoading && ranges.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <StatCard label="Ranges" value={ranges.length} icon={FolderOpen} iconColor="text-rose-600" bgColor="bg-rose-50" />
+          <StatCard label="Total Products" value={ranges.reduce((sum, r) => sum + r._count.products, 0)} icon={Package} iconColor="text-emerald-600" bgColor="bg-emerald-50" />
+        </div>
+      )}
 
       {isLoading ? (
         <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -94,7 +104,7 @@ export default function ProductsListPage() {
                       to={`/products/range/${range.id}`}
                       className="flex items-center gap-2 font-medium text-blue-600 hover:text-blue-800"
                     >
-                      <span className="text-gray-400">📁</span>
+                      <FolderOpen className="h-4 w-4 text-gray-400" />
                       {range.name}
                     </Link>
                   </td>

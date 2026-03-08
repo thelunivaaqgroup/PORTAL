@@ -4,11 +4,16 @@ const titleMap: Record<string, string> = {
   "/login": "Login",
   "/register": "Register",
   "/dashboard": "Dashboard",
+  "/alerts": "System Alerts",
+  "/greenfield": "Greenfield Ideas",
+  "/compliance": "Compliance Hub",
   "/demo": "Demo Items",
   "/users": "Users",
   "/formulations": "Formulations",
   "/products": "Products",
   "/inventory": "Inventory",
+  "/regulatory/aicis": "AICIS Inventory",
+  "/audit": "Audit Log",
   "/settings": "Settings",
 };
 
